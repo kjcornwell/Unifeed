@@ -1,0 +1,59 @@
+version: '3.8'
+
+services:
+  camera1:
+    image: jrottenberg/ffmpeg:latest
+    container_name: unifeed-${CAMERA_1_NAME:-camera1}
+    restart: unless-stopped
+    network_mode: host
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    command: >
+      -f lavfi -i anullsrc=channel_layout=stereo:sample_rate=44100
+      -thread_queue_size 256
+      -rtsp_transport tcp
+      -i rtsps://${RTSP_USER}:${RTSP_PASS}@${PROTECT_IP}:7441/${CAMERA_1_ID}
+      -shortest
+      -vf "fps=30"
+      -map 0:a:0 -c:a aac -b:a 128k
+      -map 1:v:0 -c:v libx264 -preset veryfast -crf 28 -g 60
+      -maxrate 4500k -bufsize 9000k
+      -f flv rtmp://a.rtmp.youtube.com/live2/${YT_STREAM_KEY_1}
+    healthcheck:
+      test: ["CMD-SHELL", "ps aux | grep ffmpeg | grep -v grep"]
+      interval: 60s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  # Uncomment and configure for additional cameras:
+  # camera2:
+  #   image: jrottenberg/ffmpeg:latest
+  #   container_name: unifeed-${CAMERA_2_NAME:-camera2}
+  #   restart: unless-stopped
+  #   network_mode: host
+  #   logging:
+  #     driver: "json-file"
+  #     options:
+  #       max-size: "10m"
+  #       max-file: "3"
+  #   command: >
+  #     -f lavfi -i anullsrc=channel_layout=stereo:sample_rate=44100
+  #     -thread_queue_size 256
+  #     -rtsp_transport tcp
+  #     -i rtsps://${RTSP_USER}:${RTSP_PASS}@${PROTECT_IP}:7441/${CAMERA_2_ID}
+  #     -shortest
+  #     -vf "fps=30"
+  #     -map 0:a:0 -c:a aac -b:a 128k
+  #     -map 1:v:0 -c:v libx264 -preset veryfast -crf 28 -g 60
+  #     -maxrate 4500k -bufsize 9000k
+  #     -f flv rtmp://a.rtmp.youtube.com/live2/${YT_STREAM_KEY_2}
+  #   healthcheck:
+  #     test: ["CMD-SHELL", "ps aux | grep ffmpeg | grep -v grep"]
+  #     interval: 60s
+  #     timeout: 10s
+  #     retries: 3
+  #     start_period: 30s

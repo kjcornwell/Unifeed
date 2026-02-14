@@ -1,0 +1,779 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Unifeed — UniFi Protect → YouTube Live Streaming</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --surface-2: #232733;
+      --border: #2e3345;
+      --text: #e2e4ea;
+      --text-dim: #8b90a0;
+      --accent: #6c8cff;
+      --accent-dim: #4a62b3;
+      --green: #4ade80;
+      --yellow: #facc15;
+      --red: #f87171;
+      --orange: #fb923c;
+      --code-bg: #161922;
+      --radius: 8px;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.65;
+      padding: 0;
+    }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    /* Layout */
+    .wrapper { display: flex; min-height: 100vh; }
+    nav {
+      position: fixed; top: 0; left: 0; bottom: 0;
+      width: 260px;
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      padding: 24px 0;
+      overflow-y: auto;
+      z-index: 10;
+    }
+    nav h2 {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--accent);
+      padding: 0 20px;
+      margin-bottom: 16px;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+    nav a {
+      display: block;
+      padding: 7px 20px;
+      font-size: 13.5px;
+      color: var(--text-dim);
+      transition: all .15s;
+    }
+    nav a:hover, nav a.active {
+      color: var(--text);
+      background: var(--surface-2);
+      text-decoration: none;
+    }
+    nav .divider {
+      height: 1px;
+      background: var(--border);
+      margin: 12px 20px;
+    }
+    main {
+      margin-left: 260px;
+      max-width: 900px;
+      padding: 48px 48px 120px;
+    }
+
+    /* Typography */
+    h1 { font-size: 32px; font-weight: 700; margin-bottom: 8px; }
+    h1 small { font-size: 14px; color: var(--text-dim); font-weight: 400; display: block; margin-top: 4px; }
+    h2 { font-size: 22px; font-weight: 600; margin: 48px 0 16px; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+    h3 { font-size: 17px; font-weight: 600; margin: 32px 0 12px; color: var(--accent); }
+    h4 { font-size: 14px; font-weight: 600; margin: 20px 0 8px; }
+    p { margin-bottom: 12px; }
+    ul, ol { margin: 0 0 16px 24px; }
+    li { margin-bottom: 6px; }
+
+    /* Code */
+    code {
+      font-family: 'Cascadia Code', 'Fira Code', 'JetBrains Mono', monospace;
+      font-size: 13px;
+      background: var(--code-bg);
+      padding: 2px 6px;
+      border-radius: 4px;
+      border: 1px solid var(--border);
+    }
+    pre {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px 20px;
+      overflow-x: auto;
+      margin: 12px 0 20px;
+      position: relative;
+    }
+    pre code {
+      background: none;
+      border: none;
+      padding: 0;
+      font-size: 13px;
+      line-height: 1.6;
+    }
+    .copy-btn {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      color: var(--text-dim);
+      padding: 4px 10px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 11px;
+      font-family: inherit;
+      transition: all .15s;
+    }
+    .copy-btn:hover { color: var(--text); background: var(--border); }
+
+    /* Cards / Callouts */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px 24px;
+      margin: 16px 0;
+    }
+    .callout {
+      padding: 14px 18px;
+      border-radius: var(--radius);
+      margin: 16px 0;
+      font-size: 14px;
+      border-left: 4px solid;
+    }
+    .callout-warn {
+      background: rgba(250,204,21,.08);
+      border-color: var(--yellow);
+    }
+    .callout-warn strong { color: var(--yellow); }
+    .callout-info {
+      background: rgba(108,140,255,.08);
+      border-color: var(--accent);
+    }
+    .callout-info strong { color: var(--accent); }
+    .callout-danger {
+      background: rgba(248,113,113,.08);
+      border-color: var(--red);
+    }
+    .callout-danger strong { color: var(--red); }
+    .callout-success {
+      background: rgba(74,222,128,.08);
+      border-color: var(--green);
+    }
+    .callout-success strong { color: var(--green); }
+
+    /* Tables */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 12px 0 20px;
+      font-size: 14px;
+    }
+    th, td {
+      text-align: left;
+      padding: 10px 14px;
+      border: 1px solid var(--border);
+    }
+    th {
+      background: var(--surface-2);
+      font-weight: 600;
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+      color: var(--text-dim);
+    }
+    td { background: var(--surface); }
+
+    /* Steps */
+    .steps { counter-reset: step; list-style: none; margin-left: 0; padding-left: 0; }
+    .steps li {
+      counter-increment: step;
+      position: relative;
+      padding-left: 48px;
+      margin-bottom: 20px;
+    }
+    .steps li::before {
+      content: counter(step);
+      position: absolute;
+      left: 0; top: 0;
+      width: 32px; height: 32px;
+      background: var(--accent-dim);
+      color: #fff;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    /* Badge */
+    .badge {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .badge-rec { background: rgba(74,222,128,.15); color: var(--green); }
+    .badge-alt { background: rgba(108,140,255,.15); color: var(--accent); }
+    .badge-cloud { background: rgba(251,146,60,.15); color: var(--orange); }
+
+    /* Responsive */
+    @media (max-width: 900px) {
+      nav { display: none; }
+      main { margin-left: 0; padding: 24px 20px 80px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrapper">
+    <nav>
+      <h2>Unifeed</h2>
+      <a href="#overview">Overview</a>
+      <a href="#architecture">Architecture</a>
+      <a href="#prerequisites">Prerequisites</a>
+      <div class="divider"></div>
+      <a href="#step1-protect">1. UniFi Protect RTSP</a>
+      <a href="#step2-youtube">2. YouTube Live Setup</a>
+      <a href="#step3-webcamio">3. webcam.io Setup</a>
+      <div class="divider"></div>
+      <a href="#alt-docker">Alt: Docker + FFmpeg</a>
+      <a href="#alt-ffmpeg">Alt: FFmpeg Direct</a>
+      <a href="#alt-obs">Alt: OBS Studio</a>
+      <a href="#alt-mediamtx">Alt: MediaMTX Relay</a>
+      <a href="#alt-windows">Alt: Windows Service</a>
+      <div class="divider"></div>
+      <a href="#multi-camera">Multi-Camera Setup</a>
+      <a href="#troubleshooting">Troubleshooting</a>
+      <a href="#security">Security</a>
+      <a href="#decision-matrix">Decision Matrix</a>
+      <a href="#reference">Quick Reference</a>
+    </nav>
+
+    <main>
+      <!-- =============== OVERVIEW =============== -->
+      <h1 id="overview">
+        Unifeed
+        <small>UniFi Protect Camera → YouTube Live Streaming — Deployment Guide</small>
+      </h1>
+      <p>
+        This document covers every method for getting a live RTSP stream from UniFi Protect cameras
+        onto YouTube Live — from the managed <strong>webcam.io</strong> cloud service to self-hosted
+        Docker containers running FFmpeg.
+      </p>
+
+      <!-- =============== ARCHITECTURE =============== -->
+      <h2 id="architecture">Architecture</h2>
+      <div class="card">
+        <pre><code>┌──────────────┐    RTSPS     ┌─────────────────┐    RTMP     ┌──────────────┐
+│  UniFi       │─────────────▶│  Relay Service   │────────────▶│  YouTube     │
+│  Protect     │  :7441       │  (webcam.io /    │  :1935      │  Live        │
+│  Camera      │              │   FFmpeg/Docker) │             │              │
+└──────────────┘              └─────────────────┘             └──────────────┘</code></pre>
+        <p style="margin:0;color:var(--text-dim);font-size:13px;">
+          The camera outputs RTSPS. A relay transcodes/forwards it as RTMP to YouTube's ingest servers.
+        </p>
+      </div>
+
+      <!-- =============== PREREQUISITES =============== -->
+      <h2 id="prerequisites">Prerequisites</h2>
+      <ul>
+        <li>UniFi Protect controller with one or more cameras</li>
+        <li>YouTube account with <strong>live streaming enabled</strong> (requires 24-hour verification after first enable)</li>
+        <li>Network access from the relay machine to the Protect controller (same LAN or VPN)</li>
+        <li>For webcam.io: port forwarding + DDNS on your router</li>
+        <li>For self-hosted: Docker <em>or</em> FFmpeg installed on a machine with stable uptime</li>
+      </ul>
+
+      <!-- =============== STEP 1: UNIFI PROTECT =============== -->
+      <h2 id="step1-protect">Step 1 — Enable RTSP on UniFi Protect</h2>
+
+      <h3>Enable the RTSP Stream</h3>
+      <ol class="steps">
+        <li>Open the UniFi Protect web UI</li>
+        <li>Go to <strong>Devices</strong> → select your camera</li>
+        <li>Navigate to <strong>Settings → Advanced → RTSP</strong></li>
+        <li>Toggle RTSP <strong>On</strong></li>
+        <li>Choose quality: <strong>High</strong>, <strong>Medium</strong>, or <strong>Low</strong></li>
+        <li>Copy the RTSP URL displayed — you'll need this later</li>
+      </ol>
+
+      <h3>RTSP URL Formats</h3>
+      <table>
+        <tr><th>Type</th><th>URL Pattern</th><th>Port</th></tr>
+        <tr>
+          <td>RTSPS (via Protect)</td>
+          <td><code>rtsps://&lt;protect_ip&gt;:7441/&lt;camera_id&gt;</code></td>
+          <td>7441</td>
+        </tr>
+        <tr>
+          <td>RTSP (direct to camera)</td>
+          <td><code>rtsp://&lt;camera_ip&gt;:7447/&lt;camera_id&gt;</code></td>
+          <td>7447</td>
+        </tr>
+      </table>
+
+      <h3>Create a Dedicated RTSP User</h3>
+      <p>Don't use your admin account. Create a restricted local user for streaming.</p>
+      <ol class="steps">
+        <li>Go to <strong>UniFi OS → Admins &amp; Users</strong></li>
+        <li>Create a new local user</li>
+        <li>Check <strong>"Restrict to local access only"</strong></li>
+        <li>Set a strong username/password</li>
+      </ol>
+      <p>Authenticated RTSP URL:</p>
+      <pre><code>rtsps://streamuser:yourpassword@192.168.1.1:7441/CAMERA_ID</code></pre>
+
+      <h3>Test the Stream</h3>
+      <p>Open in VLC: <strong>Media → Open Network Stream</strong> and paste your RTSP URL. If it plays, you're good.</p>
+
+      <!-- =============== STEP 2: YOUTUBE =============== -->
+      <h2 id="step2-youtube">Step 2 — YouTube Live Setup</h2>
+
+      <ol class="steps">
+        <li>Go to <a href="https://studio.youtube.com" target="_blank">YouTube Studio</a></li>
+        <li>Click <strong>Create → Go Live</strong></li>
+        <li>
+          Choose <strong>"Schedule stream"</strong> (not "Stream" tab)
+          <div class="callout callout-warn">
+            <strong>Important:</strong> For 24/7 streaming, always use <strong>Scheduled Streams</strong>.
+            The default "Stream Tab" will cause problems with continuous streams.
+          </div>
+        </li>
+        <li>Set your stream title, description, and visibility</li>
+        <li>Copy your <strong>Stream Key</strong> — treat this like a password</li>
+      </ol>
+
+      <h3>YouTube RTMP Ingest URL</h3>
+      <table>
+        <tr><th>Protocol</th><th>URL</th></tr>
+        <tr><td>RTMP</td><td><code>rtmp://a.rtmp.youtube.com/live2</code></td></tr>
+        <tr><td>RTMPS (secure)</td><td><code>rtmps://a.rtmp.youtube.com:443/live2</code></td></tr>
+      </table>
+
+      <h3>Recommended Encoding Settings</h3>
+      <table>
+        <tr><th>Resolution</th><th>FPS</th><th>Bitrate</th></tr>
+        <tr><td>720p</td><td>30</td><td>1,500 – 4,000 Kbps</td></tr>
+        <tr><td>1080p</td><td>30</td><td>4,500 – 9,000 Kbps</td></tr>
+        <tr><td>4K</td><td>30</td><td>13,000 – 34,000 Kbps</td></tr>
+      </table>
+      <div class="callout callout-info">
+        <strong>Rule of thumb:</strong> Your stream bitrate should not exceed 50% of your upload speed.
+        10 Mbps upload → max 5 Mbps bitrate.
+      </div>
+
+      <!-- =============== STEP 3: WEBCAM.IO =============== -->
+      <h2 id="step3-webcamio">Step 3 — webcam.io Setup <span class="badge badge-cloud">Cloud</span></h2>
+      <p>
+        <a href="https://webcam.io" target="_blank">webcam.io</a> is a cloud relay service that pulls
+        your camera's RTSP stream and pushes it to YouTube. No local software required.
+      </p>
+
+      <h3>Pricing</h3>
+      <table>
+        <tr><th>Plan</th><th>Price</th><th>Cameras</th><th>Features</th></tr>
+        <tr><td>Free</td><td>$0</td><td>—</td><td>Time-lapse only</td></tr>
+        <tr><td>LIVE</td><td>~$5/mo</td><td>Up to 25</td><td>H.264 live streaming</td></tr>
+        <tr><td>LIVE+</td><td>Higher</td><td>Up to 25</td><td>H.265, MJPEG transcoding</td></tr>
+      </table>
+      <p style="color:var(--text-dim);font-size:13px;">Each camera that streams live requires its own LIVE plan. 7-day free trial available (no CC).</p>
+
+      <h3>Network Requirements</h3>
+      <p>Because webcam.io connects <em>to your camera from the cloud</em>, you must expose the RTSP port to the internet.</p>
+
+      <h4>Port Forwarding</h4>
+      <ol class="steps">
+        <li>Reserve your Protect controller's LAN IP in your router's DHCP settings</li>
+        <li>Forward an external port (e.g. <code>8554</code>) to internal <code>7441</code> on the Protect IP</li>
+        <li>Verify the forward works with an online port-check tool</li>
+      </ol>
+
+      <h4>Dynamic DNS (DDNS)</h4>
+      <p>
+        Your ISP likely assigns a dynamic public IP. Set up DDNS (DuckDNS, No-IP, or your router's built-in client)
+        so webcam.io always has a valid hostname.
+      </p>
+
+      <h3>Connect Camera in webcam.io</h3>
+      <ol class="steps">
+        <li>Sign up at <a href="https://webcam.io" target="_blank">webcam.io</a></li>
+        <li>Add a new camera</li>
+        <li>Enter your RTSPS URL with DDNS hostname: <code>rtsps://user:pass@yourhost.ddns.net:8554/CAMERA_ID</code></li>
+        <li>Link your YouTube account and enter the stream key</li>
+        <li>Select "Scheduled stream" mode</li>
+        <li>Start streaming</li>
+      </ol>
+
+      <div class="callout callout-warn">
+        <strong>Security trade-off:</strong> Port forwarding exposes your camera to the internet.
+        Use a strong password, non-standard port, and keep firmware updated.
+        If this is unacceptable, use one of the self-hosted methods below instead.
+      </div>
+
+      <!-- =============== ALT: DOCKER =============== -->
+      <h2 id="alt-docker">Alternative: Docker + FFmpeg <span class="badge badge-rec">Recommended Self-Hosted</span></h2>
+      <p>
+        Run FFmpeg in a Docker container with auto-restart. No port forwarding needed — runs on your LAN.
+      </p>
+
+      <h3>Setup</h3>
+      <ol class="steps">
+        <li>
+          Clone this repo:
+          <pre><code>git clone https://github.com/kjcornwell/Unifeed.git
+cd Unifeed</code></pre>
+        </li>
+        <li>
+          Copy and fill in environment variables:
+          <pre><code>cp .env.example .env
+# Edit .env with your actual values</code></pre>
+        </li>
+        <li>
+          Start the stream:
+          <pre><code>docker compose up -d</code></pre>
+        </li>
+      </ol>
+
+      <h3>docker-compose.yml</h3>
+      <pre><button class="copy-btn" onclick="copyBlock(this)">Copy</button><code>version: '3.8'
+
+services:
+  camera1:
+    image: jrottenberg/ffmpeg:latest
+    container_name: unifeed-${CAMERA_1_NAME:-camera1}
+    restart: unless-stopped
+    network_mode: host
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    command: &gt;
+      -f lavfi -i anullsrc=channel_layout=stereo:sample_rate=44100
+      -thread_queue_size 256
+      -rtsp_transport tcp
+      -i rtsps://${RTSP_USER}:${RTSP_PASS}@${PROTECT_IP}:7441/${CAMERA_1_ID}
+      -shortest
+      -vf "fps=30"
+      -map 0:a:0 -c:a aac -b:a 128k
+      -map 1:v:0 -c:v libx264 -preset veryfast -crf 28 -g 60
+      -maxrate 4500k -bufsize 9000k
+      -f flv rtmp://a.rtmp.youtube.com/live2/${YT_STREAM_KEY_1}</code></pre>
+
+      <h3>.env File</h3>
+      <pre><button class="copy-btn" onclick="copyBlock(this)">Copy</button><code>RTSP_USER=streamuser
+RTSP_PASS=changeme
+PROTECT_IP=192.168.1.1
+CAMERA_1_ID=your-camera-id-here
+CAMERA_1_NAME=front-beach
+YT_STREAM_KEY_1=xxxx-xxxx-xxxx-xxxx-xxxx</code></pre>
+
+      <h3>FFmpeg Flags Explained</h3>
+      <table>
+        <tr><th>Flag</th><th>Purpose</th></tr>
+        <tr><td><code>-f lavfi -i anullsrc=...</code></td><td>Generate silent audio (YouTube requires an audio track)</td></tr>
+        <tr><td><code>-thread_queue_size 256</code></td><td>Input buffer for smoother streaming</td></tr>
+        <tr><td><code>-rtsp_transport tcp</code></td><td>Use TCP for RTSP (more reliable than UDP)</td></tr>
+        <tr><td><code>-shortest</code></td><td>End when the shortest input ends</td></tr>
+        <tr><td><code>-vf "fps=30"</code></td><td>Force 30 FPS output</td></tr>
+        <tr><td><code>-c:v libx264 -preset veryfast</code></td><td>H.264 encoding, fast preset (low CPU)</td></tr>
+        <tr><td><code>-crf 28</code></td><td>Quality level (lower = better, 28 is decent for webcam)</td></tr>
+        <tr><td><code>-g 60</code></td><td>Keyframe every 60 frames (2 sec at 30fps)</td></tr>
+        <tr><td><code>-maxrate 4500k -bufsize 9000k</code></td><td>Bitrate cap for consistent upload</td></tr>
+        <tr><td><code>-f flv</code></td><td>FLV container (required for RTMP to YouTube)</td></tr>
+      </table>
+
+      <h3>Management Commands</h3>
+      <pre><code># View logs
+docker logs -f unifeed-front-beach
+
+# Restart
+docker restart unifeed-front-beach
+
+# Stop
+docker compose down
+
+# Start
+docker compose up -d</code></pre>
+
+      <!-- =============== ALT: FFMPEG DIRECT =============== -->
+      <h2 id="alt-ffmpeg">Alternative: FFmpeg Direct <span class="badge badge-alt">Quick &amp; Simple</span></h2>
+      <p>Run FFmpeg straight from the command line. Good for testing, not ideal for 24/7.</p>
+
+      <h3>Passthrough (no re-encode)</h3>
+      <pre><button class="copy-btn" onclick="copyBlock(this)">Copy</button><code>ffmpeg \
+  -rtsp_transport tcp \
+  -i "rtsps://user:pass@192.168.1.1:7441/CAMERA_ID" \
+  -c:v copy -c:a copy \
+  -f flv rtmp://a.rtmp.youtube.com/live2/YOUR_STREAM_KEY</code></pre>
+
+      <h3>With Silent Audio + Re-encode</h3>
+      <pre><button class="copy-btn" onclick="copyBlock(this)">Copy</button><code>ffmpeg \
+  -f lavfi -i anullsrc=channel_layout=stereo:sample_rate=44100 \
+  -thread_queue_size 256 -rtsp_transport tcp \
+  -i "rtsps://user:pass@192.168.1.1:7441/CAMERA_ID" \
+  -shortest \
+  -vf "fps=30" \
+  -map 0:a:0 -c:a aac -b:a 128k \
+  -map 1:v:0 -c:v libx264 -preset veryfast -crf 28 -g 60 \
+  -f flv rtmp://a.rtmp.youtube.com/live2/YOUR_STREAM_KEY</code></pre>
+
+      <h3>With GPU Hardware Encoding</h3>
+      <table>
+        <tr><th>GPU</th><th>Encoder Flag</th></tr>
+        <tr><td>NVIDIA</td><td><code>-c:v h264_nvenc</code></td></tr>
+        <tr><td>Intel</td><td><code>-c:v h264_qsv</code></td></tr>
+        <tr><td>AMD</td><td><code>-c:v h264_amf</code></td></tr>
+      </table>
+
+      <!-- =============== ALT: OBS =============== -->
+      <h2 id="alt-obs">Alternative: OBS Studio <span class="badge badge-alt">GUI</span></h2>
+      <ol class="steps">
+        <li>Open OBS → <strong>Sources</strong> → <strong>+</strong> → <strong>Media Source</strong></li>
+        <li>Uncheck "Local File" → paste RTSP URL</li>
+        <li>Go to <strong>Settings → Stream</strong> → Service: <strong>YouTube</strong></li>
+        <li>Paste your stream key → <strong>Start Streaming</strong></li>
+      </ol>
+      <div class="callout callout-info">
+        <strong>Note:</strong> OBS is not a great RTSP client. Expect occasional disconnects.
+        Best for temporary or preview use, not 24/7 production.
+      </div>
+
+      <!-- =============== ALT: MEDIAMTX =============== -->
+      <h2 id="alt-mediamtx">Alternative: MediaMTX Relay <span class="badge badge-alt">Advanced</span></h2>
+      <p>
+        <a href="https://github.com/bluenviron/mediamtx" target="_blank">MediaMTX</a> acts as a
+        local RTSP proxy. Useful if multiple consumers need the same camera stream.
+      </p>
+
+      <h3>mediamtx.yml</h3>
+      <pre><button class="copy-btn" onclick="copyBlock(this)">Copy</button><code>paths:
+  camera1:
+    source: rtsps://user:pass@192.168.1.1:7441/CAMERA_ID
+    sourceProtocol: rtsps
+    sourceOnDemand: yes</code></pre>
+
+      <h3>Then pipe through FFmpeg</h3>
+      <pre><code>ffmpeg \
+  -f lavfi -i anullsrc=channel_layout=stereo:sample_rate=44100 \
+  -i rtsp://localhost:8554/camera1 \
+  -shortest \
+  -map 0:a:0 -c:a aac -b:a 128k \
+  -map 1:v:0 -c:v copy \
+  -f flv rtmp://a.rtmp.youtube.com/live2/YOUR_STREAM_KEY</code></pre>
+
+      <!-- =============== ALT: WINDOWS SERVICE =============== -->
+      <h2 id="alt-windows">Alternative: Windows Service (NSSM) <span class="badge badge-alt">Windows</span></h2>
+      <p>Run FFmpeg as a Windows service that starts at boot — no user login required.</p>
+
+      <h3>Install</h3>
+      <ol class="steps">
+        <li>Download <a href="https://nssm.cc/download" target="_blank">NSSM</a> and FFmpeg</li>
+        <li>
+          Create <code>stream.bat</code>:
+          <pre><code>@echo off
+C:\Tools\ffmpeg\bin\ffmpeg.exe ^
+  -f lavfi -i anullsrc=channel_layout=stereo:sample_rate=44100 ^
+  -thread_queue_size 256 -rtsp_transport tcp ^
+  -i rtsps://user:pass@192.168.1.1:7441/CAMERA_ID ^
+  -shortest -vf "fps=30" ^
+  -map 0:a:0 -c:a aac -b:a 128k ^
+  -map 1:v:0 -c:v libx264 -preset veryfast -crf 28 -g 60 ^
+  -f flv rtmp://a.rtmp.youtube.com/live2/YOUR_STREAM_KEY</code></pre>
+        </li>
+        <li>
+          Register the service (Admin CMD):
+          <pre><code>nssm install UnifeedStream C:\path\to\stream.bat
+nssm start UnifeedStream</code></pre>
+        </li>
+      </ol>
+
+      <h3>Manage</h3>
+      <pre><code>nssm start UnifeedStream
+nssm stop UnifeedStream
+nssm restart UnifeedStream
+nssm remove UnifeedStream confirm</code></pre>
+
+      <!-- =============== MULTI-CAMERA =============== -->
+      <h2 id="multi-camera">Multi-Camera Setup</h2>
+      <p>Duplicate the service block in <code>docker-compose.yml</code> for each camera. Each needs its own YouTube stream key.</p>
+      <pre><button class="copy-btn" onclick="copyBlock(this)">Copy</button><code>services:
+  front-beach:
+    image: jrottenberg/ffmpeg:latest
+    container_name: unifeed-front-beach
+    restart: unless-stopped
+    network_mode: host
+    command: &gt;
+      -f lavfi -i anullsrc=channel_layout=stereo:sample_rate=44100
+      -thread_queue_size 256 -rtsp_transport tcp
+      -i rtsps://${RTSP_USER}:${RTSP_PASS}@${PROTECT_IP}:7441/${CAMERA_1_ID}
+      -shortest -vf "fps=30"
+      -map 0:a:0 -c:a aac -b:a 128k
+      -map 1:v:0 -c:v libx264 -preset veryfast -crf 28 -g 60
+      -maxrate 4500k -bufsize 9000k
+      -f flv rtmp://a.rtmp.youtube.com/live2/${YT_STREAM_KEY_1}
+
+  pool-deck:
+    image: jrottenberg/ffmpeg:latest
+    container_name: unifeed-pool-deck
+    restart: unless-stopped
+    network_mode: host
+    command: &gt;
+      -f lavfi -i anullsrc=channel_layout=stereo:sample_rate=44100
+      -thread_queue_size 256 -rtsp_transport tcp
+      -i rtsps://${RTSP_USER}:${RTSP_PASS}@${PROTECT_IP}:7441/${CAMERA_2_ID}
+      -shortest -vf "fps=30"
+      -map 0:a:0 -c:a aac -b:a 128k
+      -map 1:v:0 -c:v libx264 -preset veryfast -crf 28 -g 60
+      -maxrate 4500k -bufsize 9000k
+      -f flv rtmp://a.rtmp.youtube.com/live2/${YT_STREAM_KEY_2}</code></pre>
+
+      <!-- =============== TROUBLESHOOTING =============== -->
+      <h2 id="troubleshooting">Troubleshooting</h2>
+
+      <h3>Can't connect to RTSP stream</h3>
+      <ul>
+        <li>Verify RTSP is enabled in Protect camera settings</li>
+        <li>Test with VLC first</li>
+        <li>Check camera ID is correct (copy from Protect UI)</li>
+        <li>Try <code>-rtsp_transport udp</code> instead of <code>tcp</code></li>
+        <li>Ensure ports 7441/7447 aren't blocked by firewall</li>
+      </ul>
+
+      <h3>Stream keeps disconnecting</h3>
+      <ul>
+        <li>Use <code>-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5</code> before the input URL</li>
+        <li>Increase buffer: <code>-thread_queue_size 512</code></li>
+        <li>Use MediaMTX as a relay for better stability</li>
+        <li>Check network between streaming machine and Protect controller</li>
+      </ul>
+
+      <h3>YouTube rejects the stream</h3>
+      <ul>
+        <li>Add a silent audio track (<code>anullsrc</code>) — YouTube requires audio</li>
+        <li>Ensure you're using H.264 video codec (not H.265)</li>
+        <li>Verify stream key is correct and hasn't been rotated</li>
+        <li>Use a scheduled stream, not the default stream tab</li>
+      </ul>
+
+      <h3>High CPU usage</h3>
+      <ul>
+        <li>Use <code>-c:v copy</code> to skip re-encoding (if camera outputs H.264)</li>
+        <li>Use GPU encoding (<code>h264_nvenc</code>, <code>h264_qsv</code>, <code>h264_amf</code>)</li>
+        <li>Lower preset to <code>ultrafast</code></li>
+        <li>Reduce resolution at camera level instead of in FFmpeg</li>
+      </ul>
+
+      <h3>YouTube stream dies when no viewers</h3>
+      <ul>
+        <li>Use <strong>Scheduled Streams</strong> instead of "Stream Tab"</li>
+        <li>YouTube may stop processing after extended zero-viewer periods</li>
+      </ul>
+
+      <!-- =============== SECURITY =============== -->
+      <h2 id="security">Security</h2>
+      <div class="callout callout-danger">
+        <strong>Never commit secrets.</strong> The <code>.env</code> file is in <code>.gitignore</code>.
+        Keep stream keys and RTSP passwords out of version control.
+      </div>
+      <ul>
+        <li>Create a <strong>dedicated RTSP user</strong> with minimal permissions — don't use your admin account</li>
+        <li>Use <strong>RTSPS</strong> (encrypted) over RTSP whenever possible</li>
+        <li>Keep cameras on an <strong>isolated VLAN</strong></li>
+        <li>If using webcam.io, use a <strong>non-standard external port</strong> and strong password</li>
+        <li><strong>Rotate your YouTube stream key</strong> if it's ever exposed</li>
+        <li>Keep UniFi Protect firmware updated</li>
+      </ul>
+
+      <!-- =============== DECISION MATRIX =============== -->
+      <h2 id="decision-matrix">Decision Matrix</h2>
+      <table>
+        <tr>
+          <th>Method</th><th>Cost</th><th>Complexity</th><th>Reliability</th><th>Best For</th>
+        </tr>
+        <tr>
+          <td><strong>webcam.io</strong></td>
+          <td>$5+/mo</td><td>Low</td><td>High</td>
+          <td>Hands-off, non-technical</td>
+        </tr>
+        <tr>
+          <td><strong>Docker + FFmpeg</strong></td>
+          <td>Free</td><td>Medium</td><td>High</td>
+          <td>Production, multi-camera</td>
+        </tr>
+        <tr>
+          <td><strong>FFmpeg Direct</strong></td>
+          <td>Free</td><td>Medium</td><td>Medium</td>
+          <td>Testing, one-off streams</td>
+        </tr>
+        <tr>
+          <td><strong>OBS Studio</strong></td>
+          <td>Free</td><td>Low</td><td>Low</td>
+          <td>Preview, temporary use</td>
+        </tr>
+        <tr>
+          <td><strong>Windows Service</strong></td>
+          <td>Free</td><td>High</td><td>High</td>
+          <td>Windows-only servers</td>
+        </tr>
+        <tr>
+          <td><strong>MediaMTX + FFmpeg</strong></td>
+          <td>Free</td><td>High</td><td>Very High</td>
+          <td>Multi-consumer, advanced</td>
+        </tr>
+      </table>
+
+      <!-- =============== QUICK REFERENCE =============== -->
+      <h2 id="reference">Quick Reference</h2>
+
+      <h3>Test RTSP in VLC</h3>
+      <pre><code>vlc rtsps://user:pass@192.168.1.1:7441/CAMERA_ID</code></pre>
+
+      <h3>One-liner: RTSP → YouTube</h3>
+      <pre><button class="copy-btn" onclick="copyBlock(this)">Copy</button><code>ffmpeg -f lavfi -i anullsrc=channel_layout=stereo:sample_rate=44100 \
+  -thread_queue_size 256 -rtsp_transport tcp \
+  -i "rtsps://user:pass@192.168.1.1:7441/CAMERA_ID" \
+  -shortest -vf "fps=30" \
+  -map 0:a:0 -c:a aac -b:a 128k \
+  -map 1:v:0 -c:v libx264 -preset veryfast -crf 28 -g 60 \
+  -f flv rtmp://a.rtmp.youtube.com/live2/STREAM_KEY</code></pre>
+
+      <h3>Docker Quick Start</h3>
+      <pre><code>git clone https://github.com/kjcornwell/Unifeed.git &amp;&amp; cd Unifeed
+cp .env.example .env    # fill in your values
+docker compose up -d    # start streaming
+docker logs -f unifeed-front-beach  # watch logs</code></pre>
+
+      <h3>Key Ports</h3>
+      <table>
+        <tr><th>Port</th><th>Protocol</th><th>Service</th></tr>
+        <tr><td>7441</td><td>RTSPS</td><td>UniFi Protect (encrypted)</td></tr>
+        <tr><td>7447</td><td>RTSP</td><td>UniFi Protect (direct)</td></tr>
+        <tr><td>1935</td><td>RTMP</td><td>YouTube ingest</td></tr>
+        <tr><td>443</td><td>RTMPS</td><td>YouTube ingest (encrypted)</td></tr>
+      </table>
+
+      <p style="margin-top:64px;color:var(--text-dim);font-size:12px;border-top:1px solid var(--border);padding-top:16px;">
+        Unifeed — Last updated February 2026 —
+        <a href="https://github.com/kjcornwell/Unifeed">github.com/kjcornwell/Unifeed</a>
+      </p>
+    </main>
+  </div>
+
+  <script>
+    function copyBlock(btn) {
+      const code = btn.parentElement.querySelector('code');
+      const text = code.innerText;
+      navigator.clipboard.writeText(text).then(() => {
+        btn.textContent = 'Copied!';
+        setTimeout(() => btn.textContent = 'Copy', 1500);
+      });
+    }
+  </script>
+</body>
+</html>
